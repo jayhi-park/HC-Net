@@ -420,10 +420,10 @@ class Logger_train:
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y%m%d_%H%M%S")  
 
-        self.file_name = "./watch/{}/{}_{}.log".format(args.dataset, args.name, timestamp)
+        self.file_name = "/ws/LTdata/HCNet/{}/{}_{}.log".format(args.dataset, args.name, timestamp)
 
-        os.makedirs("./watch/", exist_ok=True)
-        os.makedirs("./watch/{}".format(args.dataset), exist_ok=True)
+        os.makedirs("/ws/LTdata/HCNet/", exist_ok=True)
+        os.makedirs("/ws/LTdata/HCNet/{}".format(args.dataset), exist_ok=True)
 
         print_colored(f"Log will be saved to:{self.file_name}",TextColors.BLUE)
 

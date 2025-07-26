@@ -1,1 +1,1 @@
-python -u train.py --config models/config/VIGOR/train-vigor.json --batch_size 16  --name vigor_same
+python3 -u train.py --config models/config/VIGOR/train-vigor_360.json --batch_size 1  --name HCNet_VIGOR_180 --wandb

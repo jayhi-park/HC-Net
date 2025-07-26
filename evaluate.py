@@ -13,6 +13,7 @@ from models.utils.utils import *
 from models.utils.loss_factory import *
 import time
 import cv2
+from tqdm import tqdm
 
 @torch.no_grad()
 def validate_process(model,total_steps, val_dataset, args):
@@ -21,7 +22,7 @@ def validate_process(model,total_steps, val_dataset, args):
     mace_list = []
     timeall=[]
     logger = Logger(args)
-    for i_batch, data_blob in enumerate(val_dataset):
+    for i_batch, data_blob in enumerate(tqdm(val_dataset)):
         time_start = time.time()
         if args.dataset == 'kitti':
             image1, image2, grd_gps,  sat_gps, transformed_center,sat_delta,_  = [x.to(model.device) for x in data_blob]
@@ -53,14 +54,14 @@ def validate_process(model,total_steps, val_dataset, args):
             plt.figure(figsize=(10,10))
             result = show_overlap(image1, image0, H[0])
             # cv2.imwrite('./watch/' + "result_" + str(total_steps).zfill(5) + '.png',result[:,:,::-1])
-            print("save at: {}".format('./watch/' + "result_" + str(total_steps).zfill(5) + '.png'))
+            # print("save at: {}".format('./watch/' + "result_" + str(total_steps).zfill(5) + '.png'))
 
         # if args.dataset == 'vigor':
         mace_list.append(metrics['epe'])
         torch.cuda.empty_cache()
         time_end = time.time()
         timeall.append(time_end-time_start)
-    
+
     # if args.dataset == 'vigor':
     mace = np.mean(np.array(mace_list))
     logger._print_training_status()

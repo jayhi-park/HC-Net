@@ -2,5 +2,9 @@
 
 watch/
 checkpoints/*
+wandb/
+.idea/
+models/efficientnet_pytorch/__pycache__/
+models/utils/__pycache__/
 
 **/a_local_test

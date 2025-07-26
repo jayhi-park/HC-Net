@@ -23,6 +23,8 @@ import dataset as datasets
 from models.utils.utils import *
 from models.utils.loss_factory import *
 from myevaluate import evaluate_HCNet
+from tqdm import tqdm
+from utils.wandb_logger import WandbLogger
 
 # from torch.utils.tensorboard import SummaryWriter
 import warnings
@@ -67,7 +69,7 @@ def fetch_optimizer(args, model):
     return optimizer, scheduler
     
 
-def train(args):
+def train(args, wandb_logger):
 
     model = nn.DataParallel(HCNet(args), device_ids=args.gpuid)
     print("Parameter Count: %d" % count_parameters(model))
@@ -80,6 +82,7 @@ def train(args):
 
     optimizer, scheduler = fetch_optimizer(args, model)
     best_dis = args.best_dis
+    wandb_features = dict()
 
     if args.restore_ckpt is not None:
         PATH = args.restore_ckpt   # 'checkpoints/best_checkpoint.pth'
@@ -119,7 +122,7 @@ def train(args):
     w1, w2, w3 = args.loss_w
     while should_keep_training:
         model.train()  
-        for i_batch, data_blob in enumerate(train_loader):
+        for i_batch, data_blob in enumerate(tqdm(train_loader)):
             optimizer.zero_grad()
 
 
@@ -155,16 +158,19 @@ def train(args):
             metrics.update({'loss': loss.cpu().item()})
             logger.push(metrics)
 
-            if total_steps %  args.IMG_FREQ == args.IMG_FREQ-1:
-                H = get_homograpy(four_pred[-1],  image1.shape)
-                H = H.detach().cpu().numpy()
-                image1 = image1[0].permute(1, 2,0).detach().cpu().numpy()
-                image0 = image2[0].permute(1, 2,0).detach().cpu().numpy()
-                plt.figure(figsize=(10,10))
-                result = show_overlap(image1, image0, H[0])
-                cv2.imwrite('./watch/' + "result_" + args.name + '.png',result[:,:,::-1])
-                print("save at: {}".format('./watch/' + "result_" + args.name + '.png'))
+            # if total_steps %  args.IMG_FREQ == args.IMG_FREQ-1:
+            #     H = get_homograpy(four_pred[-1],  image1.shape)
+            #     H = H.detach().cpu().numpy()
+            #     image1 = image1[0].permute(1, 2,0).detach().cpu().numpy()
+            #     image0 = image2[0].permute(1, 2,0).detach().cpu().numpy()
+            #     plt.figure(figsize=(10,10))
+            #     result = show_overlap(image1, image0, H[0])
+            #     cv2.imwrite('/ws/LTdata/HCNet/' + "result_" + args.name + '.png',result[:,:,::-1])
+            #     print("save at: {}".format('/ws/LTdata/HCNet/' + "result_" + args.name + '.png'))
             total_steps += 1
+
+            wandb_features['train/loss'] = np.round(loss.item(), decimals=4)
+            wandb_logger.log_evaluate(wandb_features)
 
             if total_steps > args.num_steps:
                 should_keep_training = False
@@ -176,7 +182,7 @@ def train(args):
             epoch+=1     
             continue
 
-
+        wandb_features = dict()
         results = evaluate.validate_process(model.module, total_steps, val_loader, args)        
         logger.write_dict(results)
         val_mdis = results['val_mace']
@@ -206,7 +212,14 @@ def train(args):
         with open(logger.file_name, 'a') as file:
             file.write('Epoch: [{}/{}], mdis: {}, the best: {}, at {}.'
                 .format(epoch+1, num_epochs, val_mdis.item(), best_dis, checkpoint['steps']) + '\n')                       
-        epoch+=1 
+        epoch+=1
+
+        if args.cross_area:
+            area = 'cross'
+        else:
+            area = 'same'
+        wandb_features[f'{area}/val_mdis'] = val_mdis
+        wandb_logger.log_evaluate(wandb_features)
         
     logger.close()
     print("The minist distance is {}m!".format(best_dis))
@@ -236,6 +249,7 @@ if __name__ == '__main__':
     parser.add_argument('--validation', type=str, nargs='+')
 
     parser.add_argument('--best_dis', type=float, default=1e8)
+    parser.add_argument('--wandb', '-wb', action='store_true', help='Turn on wandb log')
 
     args = parser.parse_args()
     
@@ -250,6 +264,13 @@ if __name__ == '__main__':
     if args.batch_size: 
         config['batch_size'] = args.batch_size
 
+    if args.wandb:
+        wandb_config = dict(project="360_cvgl", entity='jayhi-park', name=args.name)
+        wandb_logger = WandbLogger(wandb_config, args)
+    else:
+        wandb_logger = WandbLogger(None)
+    wandb_logger.before_run()
+
     print(config)
 
     setup_seed(2023)
@@ -260,4 +281,4 @@ if __name__ == '__main__':
     if config.dataset=='vigor':
         print("Dataset is VIGOR!")  
 
-    train(config)
+    train(config, wandb_logger)

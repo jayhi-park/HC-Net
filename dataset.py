@@ -9,12 +9,12 @@ from models.utils.augment import train_transform
 
 class VIGOR(Dataset):
     def __init__(self, args, split='train', root = 'Data/VIGOR/', same_area=True):
-        usr = os.getcwd().split('/')[2]
-        root = os.path.join('/home',usr,root)
+        # usr = os.getcwd().split('/')[2]
+        root = os.path.join('/ws/data/VIGOR')
         same_area = not args.cross_area
 
         self.image_size = args.image_size
-        label_root = 'splits'    # 'splits' splits__corrected
+        label_root = 'splits_corrected'    # 'splits' splits__corrected
         if same_area:
             self.train_city_list =['NewYork', 'Seattle', 'SanFrancisco', 'Chicago'] # ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago'] ['Seattle'] 
             self.test_city_list = ['NewYork', 'Seattle', 'SanFrancisco', 'Chicago']
@@ -35,9 +35,9 @@ class VIGOR(Dataset):
                         data = np.array(line.split(' '))
                         label = []
                         for i in [1, 4, 7, 10]:
-                            label.append(os.path.join(root, city, 'satellite', data[i]))
+                            label.append(os.path.join(root, 'satellite', city, data[i]))
                         delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
-                        pano_list.append(os.path.join(root, city, 'panorama', data[0]))
+                        pano_list.append(os.path.join(root, 'ground', city, 'panorama', data[0]))
                         pano_label.append(label)
                         sat_delta.append(delta)
         else:
@@ -49,7 +49,7 @@ class VIGOR(Dataset):
                         data = np.array(line.split(' '))
                         label = []
                         for i in [1, 4, 7, 10]:
-                            label.append(os.path.join(root, city, 'satellite', data[i]))
+                            label.append(os.path.join(root, 'satellite', city, data[i]))
                         delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
                         pano_list.append(os.path.join(root, city, 'panorama', data[0]))
                         pano_label.append(label)
@@ -81,7 +81,7 @@ class VIGOR(Dataset):
         sat_gps = np.array(sat_path[:-4].split('_')[-2:]).astype(float)
 
         # =================== read satellite map ===================================
-        sat = cv2.imread(sat_path, 1)[:,:,::-1] 
+        sat = cv2.imread(sat_path, 1)[:,:,::-1]
         sat = cv2.resize(sat, (patch_size, patch_size))
 
         # =================== read ground map ===================================
