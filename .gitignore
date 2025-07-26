@@ -6,5 +6,6 @@ wandb/
 .idea/
 models/efficientnet_pytorch/__pycache__/
 models/utils/__pycache__/
+*.pyc
 
 **/a_local_test

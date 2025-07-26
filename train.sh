@@ -1,1 +1,1 @@
-python3 -u train.py --config models/config/VIGOR/train-vigor_360.json --batch_size 1  --name HCNet_VIGOR_180 --wandb
+CUDA_VISIBLE_DEVICES=0 python3 -u train.py --config models/config/VIGOR/train-vigor_360.json --batch_size 1  --name HCNet_VIGOR_cross_180 --wandb

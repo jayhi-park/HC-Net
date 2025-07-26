@@ -29,7 +29,7 @@ from utils.wandb_logger import WandbLogger
 # from torch.utils.tensorboard import SummaryWriter
 import warnings
 warnings.filterwarnings("ignore")
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 try:
     from torch.cuda.amp import GradScaler
