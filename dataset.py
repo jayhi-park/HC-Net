@@ -51,7 +51,7 @@ class VIGOR(Dataset):
                         for i in [1, 4, 7, 10]:
                             label.append(os.path.join(root, 'satellite', city, data[i]))
                         delta = np.array([data[2:4], data[5:7], data[8:10], data[11:13]]).astype(float)
-                        pano_list.append(os.path.join(root, city, 'panorama', data[0]))
+                        pano_list.append(os.path.join(root, 'ground', city, 'panorama', data[0]))
                         pano_label.append(label)
                         sat_delta.append(delta)
         
@@ -137,7 +137,7 @@ def fetch_dataloader(args, split='train'):
         print("using {} images for training, {} images for validation.".format(train_size, val_size))
         return train_dataset, val_dataset
     else:
-        nw = min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 8])  # number of workers
+        nw = 4 # min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 8])  # number of workers
         print('Using {} dataloader workers every process'.format(nw)) 
         test_loader = data.DataLoader(train_dataset, batch_size=args.batch_size,
                                        pin_memory=True, shuffle=True, num_workers=nw, drop_last=False)    

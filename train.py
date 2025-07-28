@@ -75,7 +75,7 @@ def train(args, wandb_logger):
     print("Parameter Count: %d" % count_parameters(model))
 
     train_dataset, val_dataset = datasets.fetch_dataloader(args)
-    nw = min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 12])  # number of workers
+    nw = 4 #min([os.cpu_count(), args.batch_size if args.batch_size > 1 else 0, 12])  # number of workers
     print('Using {} dataloader workers every process'.format(nw)) # https://blog.csdn.net/ResumeProject/article/details/125449639
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,pin_memory=True, num_workers=nw)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False,pin_memory=True, num_workers=nw)
@@ -121,7 +121,7 @@ def train(args, wandb_logger):
     should_keep_training = True
     w1, w2, w3 = args.loss_w
     while should_keep_training:
-        model.train()  
+        model.train()
         for i_batch, data_blob in enumerate(tqdm(train_loader)):
             optimizer.zero_grad()
 
@@ -129,21 +129,21 @@ def train(args, wandb_logger):
             image1, image2, grd_gps, sat_gps, transformed_center, sat_delta, ori_angle  = [x.cuda() for x in data_blob] # img1, img2, pona_gps, sat_gps
             sat_delta = sat_delta if args.orig_label else None
 
-            # Forward pass   
-            four_pred, corr_fn  = model(image1, image2, sat_gps=sat_gps.float(), iters_lev0=args.iters_lev0)       
+            # Forward pass
+            four_pred, corr_fn  = model(image1, image2, sat_gps=sat_gps.float(), iters_lev0=args.iters_lev0)
             loss, metrics = vigor_gps_loss(four_pred, grd_gps = grd_gps, sat_gps=sat_gps, args=args, sat_delta = sat_delta, ori_angle = ori_angle, w3 = w3,\
                 orien = args.dataset == 'vigor' and args.orien, transformed_center = transformed_center, sz = [image1.shape[2],image1.shape[3]] ,gamma=args.gamma)
             loss2 = corr_loss(grd_gps, sat_gps, corr_fn, infoLoss,  args=args, sat_delta = sat_delta, transformed_center = transformed_center, sz = [image1.shape[2],image1.shape[3]])
-            
+
             loss = loss*w1 + loss2*w2
 
             # Backward and Optimze
             scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)                
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
-            
+
             scaler.step(optimizer) # https://blog.csdn.net/weixin_51723388/article/details/126260788
-            
+
             ### Learning Rate update
             scale = scaler.get_scale()
             scaler.update()
@@ -175,11 +175,11 @@ def train(args, wandb_logger):
             if total_steps > args.num_steps:
                 should_keep_training = False
                 break
-        
-        if epoch % 2 == 1 and not epoch >= num_epochs:     
+
+        if epoch % 2 == 1 and not epoch >= num_epochs:
             if args.scheduler == 'Cosine':
                 scheduler.step()
-            epoch+=1     
+            epoch+=1
             continue
 
         wandb_features = dict()
